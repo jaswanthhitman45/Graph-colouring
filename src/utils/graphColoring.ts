@@ -228,7 +228,7 @@ export function greedyColoring(courses: Map<string, Course>, students?: Student[
     // Try each slot starting from 1 until we find one without conflicts
     while (!assigned) {
       let hasConflict = false;
-      let conflictingCourses: string[] = [];
+    const conflictingCourses: string[] = [];
       
       // Check if current slot has any conflicting courses
       if (slots.has(slot)) {
@@ -311,4 +311,118 @@ function verifySolution(courses: Map<string, Course>, slots: Map<number, string[
     }
   }
   return true;
+}
+
+// DSATUR (Degree of Saturation) heuristic coloring
+export function dsaturColoring(originalCourses: Map<string, Course>, students?: Student[]): ScheduleResult {
+  // Work on a deep copy so we don't mutate the original map
+  const courses = new Map<string, Course>();
+  originalCourses.forEach((c, name) => {
+    courses.set(name, { name: c.name, conflicts: new Set(c.conflicts), color: undefined, slot: undefined });
+  });
+
+  const courseNames = Array.from(courses.keys());
+  const n = courseNames.length;
+
+  // Early return for empty
+  if (n === 0) {
+    return {
+      courses,
+      slots: new Map<number, string[]>(),
+      totalSlots: 0,
+      totalConflicts: 0,
+      students: students || [],
+      averageConflictsPerCourse: 0,
+      conflictDetails: { totalPairs: 0, conflictPairsList: [] }
+    };
+  }
+
+  // helper maps
+  const colorAssignment = new Map<string, number | undefined>();
+  const saturation = new Map<string, Set<number>>(); // set of neighbor colors
+  const degree = new Map<string, number>();
+
+  courseNames.forEach(name => {
+    colorAssignment.set(name, undefined);
+    saturation.set(name, new Set());
+    degree.set(name, courses.get(name)!.conflicts.size);
+  });
+
+  // Choose vertex selection function: highest saturation size, tie-break by degree, then name
+  const uncolored = () => courseNames.filter(nm => colorAssignment.get(nm) === undefined);
+
+  while (true) {
+    const candidates = uncolored();
+    if (candidates.length === 0) break;
+
+    candidates.sort((a, b) => {
+      const sa = (saturation.get(a) || new Set()).size;
+      const sb = (saturation.get(b) || new Set()).size;
+      if (sb !== sa) return sb - sa; // higher saturation first
+      // tie-break by degree
+      const da = degree.get(a) || 0;
+      const db = degree.get(b) || 0;
+      if (db !== da) return db - da;
+      return a.localeCompare(b);
+    });
+
+    const v = candidates[0];
+    // compute smallest available color not used by neighbors
+    const neighborColors = new Set<number>();
+    const conflicts = courses.get(v)!.conflicts;
+    for (const nb of conflicts) {
+      const c = colorAssignment.get(nb);
+      if (c !== undefined) neighborColors.add(c);
+    }
+
+    let color = 1;
+    while (neighborColors.has(color)) color++;
+    colorAssignment.set(v, color);
+
+    // Update saturation sets for neighbors
+    for (const nb of conflicts) {
+      const nbSet = saturation.get(nb) as Set<number>;
+      nbSet.add(color);
+    }
+  }
+
+  // Build slots and assign colors
+  const slots = new Map<number, string[]>();
+  colorAssignment.forEach((col, name) => {
+    const slotNum = col || 1;
+    const course = courses.get(name)!;
+    course.slot = slotNum;
+    course.color = SLOT_COLORS[(slotNum - 1) % SLOT_COLORS.length];
+    if (!slots.has(slotNum)) slots.set(slotNum, []);
+    slots.get(slotNum)!.push(name);
+  });
+
+  // Compute conflicts and stats (reuse same logic)
+  const conflictPairs = new Set<string>();
+  Array.from(courses.values()).forEach(course => {
+    course.conflicts.forEach(conflictCourse => {
+      const pair = [course.name, conflictCourse].sort().join('|');
+      conflictPairs.add(pair);
+    });
+  });
+  const totalConflicts = conflictPairs.size;
+  const totalCourses = courses.size;
+  const totalDegreeSum = Array.from(courses.values()).reduce((s, c) => s + c.conflicts.size, 0);
+  const averageConflictsPerCourse = totalCourses > 0 ? totalDegreeSum / totalCourses : 0;
+
+  return {
+    courses,
+    slots,
+    totalSlots: slots.size,
+    totalConflicts,
+    students: students || [],
+    averageConflictsPerCourse: Math.round(averageConflictsPerCourse * 10) / 10,
+    conflictDetails: { totalPairs: totalConflicts, conflictPairsList: Array.from(conflictPairs).map(p => p.split('|')) }
+  };
+}
+
+// Add light debug logging to help compare with greedy
+if (typeof window !== 'undefined') {
+  // expose helper for debugging in browser console
+  (window as unknown as Record<string, unknown>).__dsaturColoring = dsaturColoring;
 }

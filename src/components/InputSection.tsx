@@ -116,7 +116,7 @@ export function InputSection({
             </div>
             <Textarea
               id="student-data"
-              placeholder="S1: Math, Physics\nS2: Physics, Chemistry\nS3: Math, CS"
+              placeholder={"S1: Math, Physics\nS2: Physics, Chemistry\nS3: Math, CS"}
               value={studentData}
               onChange={(e) => onStudentDataChange(e.target.value)}
               rows={6}
