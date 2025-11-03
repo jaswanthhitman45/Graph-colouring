@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import * as d3 from 'd3';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Network, Eye, EyeOff } from 'lucide-react';
@@ -124,7 +123,7 @@ export function GraphVisualization({ result }: GraphVisualizationProps) {
 
     // Add hover interactions
     node
-      .on('mouseenter', function(event, d) {
+      .on('mouseenter', function(_event, d) {
         // Highlight connected links
         link
           .style('stroke', l => 
@@ -170,8 +169,8 @@ export function GraphVisualization({ result }: GraphVisualizationProps) {
       })
       .on('end', (event, d) => {
         if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+        d.fx = undefined;
+        d.fy = undefined;
       }));
 
     // Update positions on simulation tick

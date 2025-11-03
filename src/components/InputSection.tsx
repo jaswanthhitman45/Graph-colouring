@@ -53,8 +53,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlayCircle, FileText, BookOpen, Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { PlayCircle, FileText, BookOpen } from 'lucide-react';
 
 interface InputSectionProps {
   studentData: string;
@@ -73,7 +72,7 @@ export function InputSection({
   onGenerate,
   isLoading
 }: InputSectionProps) {
-  const navigate = useNavigate();
+  // navigate removed - not used in this component
 
   return (
     <motion.div
