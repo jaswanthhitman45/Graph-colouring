@@ -71,31 +71,34 @@ export function ResultsPage({ result }: ResultsPageProps) {
           <Button
             variant="outline"
             onClick={() => {
-              // Generate CSV for students
+              // Generate CSV of student timetables: student_id,course,slot
               if (!result || !result.students || result.students.length === 0) {
                 toast.error('No student data to export');
                 return;
               }
               const escape = (s: string) => '"' + s.replace(/"/g, '""') + '"';
-              let csv = 'student_id,courses\n';
+              let csv = 'student_id,course,slot\n';
               result.students.forEach(stu => {
-                const courseStr = stu.courses.join(', ');
-                csv += `${stu.id},${escape(courseStr)}\n`;
+                stu.courses.forEach(courseName => {
+                  const courseInfo = result.courses.get(courseName);
+                  const slot = courseInfo && courseInfo.slot !== undefined ? String(courseInfo.slot) : '';
+                  csv += `${stu.id},${escape(courseName)},${slot}\n`;
+                });
               });
               const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = 'students.csv';
+              a.download = 'student_timetables.csv';
               document.body.appendChild(a);
               a.click();
               URL.revokeObjectURL(url);
               a.remove();
-              toast.success('Students CSV generated');
+              toast.success('Student timetables CSV generated');
             }}
           >
             <Download className="w-4 h-4 mr-2" />
-            Export Students CSV
+            Export Student Timetables CSV
           </Button>
         </div>
       </div>
