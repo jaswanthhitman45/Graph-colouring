@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 import { StatisticsPanel } from './StatisticsPanel';
 import { GraphVisualization } from './GraphVisualization';
 import { Switch } from '@/components/ui/switch';
@@ -9,6 +10,8 @@ import { dsaturColoring } from '../utils/graphColoring';
 import { StudentEnrollmentsDisplay } from './StudentEnrollmentsDisplay';
 import { ScheduleResult } from '../types';
 import { CheckCircle, AlertCircle } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ResultsPageProps {
   result: ScheduleResult;
@@ -64,6 +67,37 @@ export function ResultsPage({ result }: ResultsPageProps) {
         >
           🔍 Student Search
         </button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              // Generate CSV for students
+              if (!result || !result.students || result.students.length === 0) {
+                toast.error('No student data to export');
+                return;
+              }
+              const escape = (s: string) => '"' + s.replace(/"/g, '""') + '"';
+              let csv = 'student_id,courses\n';
+              result.students.forEach(stu => {
+                const courseStr = stu.courses.join(', ');
+                csv += `${stu.id},${escape(courseStr)}\n`;
+              });
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'students.csv';
+              document.body.appendChild(a);
+              a.click();
+              URL.revokeObjectURL(url);
+              a.remove();
+              toast.success('Students CSV generated');
+            }}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export Students CSV
+          </Button>
+        </div>
       </div>
       <div className="flex items-start justify-between">
         <div className="w-full pr-4">
